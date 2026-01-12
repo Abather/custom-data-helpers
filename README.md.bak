@@ -58,61 +58,23 @@ That's it! The package will auto-register itself in Laravel and the helper funct
 
 ## Usage
 
-The package provides **three ways** to use custom data helpers:
+All the data helper functions work exactly like Laravel's built-in helpers, but with an additional optional `$separator` parameter.
 
-### 1. Using the DataHelper Class (Recommended)
-```php
-use Abather\CustomDataHelpers\DataHelper;
-
-$data = ['users' => ['profile' => ['name' => 'John']]];
-
-// Get value with custom separator
-DataHelper::get($data, 'users/profile/name', null, '/'); // 'John'
-
-// Set value
-DataHelper::set($data, 'users/profile/email', 'john@example.com', true, '/');
-
-// Check existence
-DataHelper::has($data, 'users/profile/name', '/'); // true
-
-// Remove key
-DataHelper::forget($data, 'users/profile/email', '/');
-```
-
-### 2. Using the Facade
-```php
-use DataHelper;
-
-DataHelper::get($data, 'users/profile/name', null, '/');
-```
-
-### 3. Using Global Helper Functions
-```php
-_data_get($data, 'users/profile/name', null, '/');
-_data_set($data, 'users/profile/email', 'john@example.com', true, '/');
-_data_has($data, 'users/profile/name', '/');
-_data_forget($data, 'users/profile/email', '/');
-```
-
----
-
-### `DataHelper::get()` - Retrieve Values
+### `data_get()` - Retrieve Values
 
 Retrieve a value from a nested array or object using a custom separator.
 
 ```php
-use Abather\CustomDataHelpers\DataHelper;
-
 // Basic usage with default dot separator (backward compatible)
 $data = ['products' => ['desk' => ['price' => 100]]];
-DataHelper::get($data, 'products.desk.price'); // 100
+data_get($data, 'products.desk.price'); // 100
 
 // Using custom separator
 $data = ['products' => ['desk' => ['price' => 100]]];
-DataHelper::get($data, 'products/desk/price', null, '/'); // 100
+data_get($data, 'products/desk/price', separator: '/'); // 100
 
 // With default value
-DataHelper::get($data, 'products/desk/discount', 0, '/'); // 0
+data_get($data, 'products/desk/discount', default: 0, separator: '/'); // 0
 
 // Using wildcards to get multiple values
 $data = [
@@ -121,7 +83,7 @@ $data = [
         ['name' => 'Chair', 'price' => 50]
     ]
 ];
-DataHelper::get($data, 'products/*/price', null, '/'); // [100, 50]
+data_get($data, 'products/*/price', separator: '/'); // [100, 50]
 
 // Using placeholders
 $flight = [
@@ -130,27 +92,19 @@ $flight = [
         ['from' => 'IST', 'to' => 'PKX'],
     ]
 ];
-DataHelper::get($flight, 'segments->{first}->from', null, '->'); // 'LHR'
-DataHelper::get($flight, 'segments->{last}->to', null, '->'); // 'PKX'
-
-// Using different separators for different data structures
-$config = ['app' => ['database' => ['host' => 'localhost']]];
-DataHelper::get($config, 'app|database|host', null, '|'); // 'localhost'
-DataHelper::get($config, 'app->database->host', null, '->'); // 'localhost'
-DataHelper::get($config, 'app/database/host', null, '/'); // 'localhost'
+data_get($flight, 'segments->{first}->from', separator: '->'); // 'LHR'
+data_get($flight, 'segments->{last}->to', separator: '->'); // 'PKX'
 ```
 
-### `DataHelper::set()` - Set Values
+### `data_set()` - Set Values
 
 Set a value within a nested array or object using a custom separator.
 
 ```php
-use Abather\CustomDataHelpers\DataHelper;
-
 $data = [];
 
 // Basic usage
-DataHelper::set($data, 'products|desk|price', 200, true, '|');
+data_set($data, 'products|desk|price', 200, separator: '|');
 // Result: ['products' => ['desk' => ['price' => 200]]]
 
 // Using wildcards for bulk updates
@@ -158,46 +112,32 @@ $products = [
     ['name' => 'Desk', 'price' => 100],
     ['name' => 'Chair', 'price' => 50]
 ];
-DataHelper::set($products, '*/price', 0, true, '/');
+data_set($products, '*/price', 0, separator: '/');
 // Sets all product prices to 0
 
 // Conditional setting (don't overwrite existing values)
 $data = ['products' => ['desk' => ['price' => 100]]];
-DataHelper::set($data, 'products.desk.price', 200, false);
+data_set($data, 'products.desk.price', 200, overwrite: false);
 // Price remains 100
 
 // Overwrite existing values (default behavior)
-DataHelper::set($data, 'products.desk.price', 200, true);
+data_set($data, 'products.desk.price', 200, overwrite: true);
 // Price is now 200
-
-// Create nested structures automatically
-$data = [];
-DataHelper::set($data, 'api/v1/endpoints/users', '/api/v1/users', true, '/');
-// Result: ['api' => ['v1' => ['endpoints' => ['users' => '/api/v1/users']]]]
-
-// Using object notation separator
-$settings = [];
-DataHelper::set($settings, 'app->theme->colors->primary', '#007bff', true, '->');
-// Result: ['app' => ['theme' => ['colors' => ['primary' => '#007bff']]]]
 ```
 
-### `DataHelper::has()` - Check if Key Exists
+### `data_has()` - Check if Key Exists
 
 Check if a key exists in an array or object using a custom separator.
 
 ```php
-use Abather\CustomDataHelpers\DataHelper;
-
 $data = ['products' => ['desk' => ['price' => 100]]];
 
 // Basic usage
-DataHelper::has($data, 'products.desk.price'); // true
-DataHelper::has($data, 'products.desk.discount'); // false
+data_has($data, 'products.desk.price'); // true
+data_has($data, 'products.desk.discount'); // false
 
 // Using custom separator
-DataHelper::has($data, 'products->desk->price', '->'); // true
-DataHelper::has($data, 'products/desk/price', '/'); // true
-DataHelper::has($data, 'products|desk|stock', '|'); // false
+data_has($data, 'products->desk->price', '->'); // true
 
 // Works with nested objects
 $object = (object) [
@@ -205,35 +145,22 @@ $object = (object) [
         'profile' => (object) ['name' => 'John']
     ]
 ];
-DataHelper::has($object, 'user/profile/name', '/'); // true
-DataHelper::has($object, 'user/profile/email', '/'); // false
-
-// Using with different separators
-$routes = [
-    'api' => [
-        'v1' => ['users' => 'UsersController']
-    ]
-];
-DataHelper::has($routes, 'api/v1/users', '/'); // true
-DataHelper::has($routes, 'api->v1->users', '->'); // true
-DataHelper::has($routes, 'api.v1.posts', '.'); // false
+data_has($object, 'user/profile/name', '/'); // true
 ```
 
-### `DataHelper::forget()` - Remove Values
+### `data_forget()` - Remove Values
 
 Remove a value from a nested array or object using a custom separator.
 
 ```php
-use Abather\CustomDataHelpers\DataHelper;
-
 $data = ['products' => ['desk' => ['price' => 100, 'stock' => 50]]];
 
 // Basic usage
-DataHelper::forget($data, 'products.desk.price');
+data_forget($data, 'products.desk.price');
 // Result: ['products' => ['desk' => ['stock' => 50]]]
 
 // Using custom separator
-DataHelper::forget($data, 'products|desk|stock', '|');
+data_forget($data, 'products|desk|stock', '|');
 // Result: ['products' => ['desk' => []]]
 
 // Using wildcards to remove from multiple items
@@ -241,21 +168,8 @@ $products = [
     ['name' => 'Desk', 'price' => 100, 'discount' => 10],
     ['name' => 'Chair', 'price' => 50, 'discount' => 5]
 ];
-DataHelper::forget($products, '*/discount', '/');
+data_forget($products, '*/discount', '/');
 // Removes 'discount' from all products
-
-// Using different separators
-$config = [
-    'app' => [
-        'debug' => true,
-        'cache' => ['enabled' => true, 'ttl' => 3600]
-    ]
-];
-DataHelper::forget($config, 'app/cache/ttl', '/');
-// Result: ['app' => ['debug' => true, 'cache' => ['enabled' => true]]]
-
-DataHelper::forget($config, 'app->cache->enabled', '->');
-// Result: ['app' => ['debug' => true, 'cache' => []]]
 ```
 
 ## Real-World Use Cases
