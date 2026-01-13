@@ -11,40 +11,6 @@ This Laravel package extends the default data helper functions (`data_get`, `dat
 
 Laravel's built-in data helpers are fantastic, but they use a fixed dot separator which can cause issues when your data keys contain actual dots. This package solves that problem by allowing you to specify any separator you want.
 
-### The Problem
-
-```php
-// Your data has keys with dots in them
-$data = [
-    'user.name' => 'John Doe',
-    'user.email' => 'john@example.com',
-    'config.app.name' => 'My App'
-];
-
-// Laravel's default data_get won't work as expected
-data_get($data, 'user.name'); // Returns null (looks for nested structure)
-```
-
-### The Solution
-
-```php
-// Use a custom separator to avoid conflicts
-data_get($data, 'user.name', default: null, separator: '/'); // Returns 'John Doe'
-
-// Or use different separators based on your needs
-data_get($nested, 'products->desk->price', separator: '->'); // Clean, readable paths
-data_get($paths, 'api/v1/users', separator: '/'); // URL-style paths
-```
-
-## Why Use This Package?
-
-| Scenario | Laravel Default | With Custom Separators |
-|----------|----------------|------------------------|
-| Keys with dots | ❌ Doesn't work | ✅ Works perfectly |
-| Custom path styles | ❌ Limited to dots | ✅ Use any separator |
-| URL-style paths | ❌ Awkward with dots | ✅ Natural with `/` |
-| Object notation | ❌ Fixed syntax | ✅ Clean `->` syntax |
-| Readability | ⚠️ Can be confusing | ✅ Clear intent |
 
 ## Installation
 
@@ -67,7 +33,10 @@ use Abather\CustomDataHelpers\DataHelper;
 $data = ['users' => ['profile' => ['name' => 'John']]];
 
 // Get value with custom separator
-DataHelper::get($data, 'users/profile/name', null, '/'); // 'John'
+DataHelper::get($data, 'users/profile/name', '/'); // 'John'
+
+// Get with default value
+DataHelper::get($data, 'users/profile/age', '/', 25); // 25 (if key doesn't exist)
 
 // Set value
 DataHelper::set($data, 'users/profile/email', 'john@example.com', true, '/');
@@ -79,18 +48,12 @@ DataHelper::has($data, 'users/profile/name', '/'); // true
 DataHelper::forget($data, 'users/profile/email', '/');
 ```
 
-### 2. Using the Facade
+### 2. Using Global Helper Functions
 ```php
-use DataHelper;
-
-DataHelper::get($data, 'users/profile/name', null, '/');
-```
-
-### 3. Using Global Helper Functions
-```php
-_data_get($data, 'users/profile/name', null, '/');
+// All DataHelper methods are also available as global helper functions with _ prefix
+_data_get($data, 'users/profile/name', '/'); // 'John'
 _data_set($data, 'users/profile/email', 'john@example.com', true, '/');
-_data_has($data, 'users/profile/name', '/');
+_data_has($data, 'users/profile/name', '/'); // true
 _data_forget($data, 'users/profile/email', '/');
 ```
 
@@ -109,10 +72,10 @@ DataHelper::get($data, 'products.desk.price'); // 100
 
 // Using custom separator
 $data = ['products' => ['desk' => ['price' => 100]]];
-DataHelper::get($data, 'products/desk/price', null, '/'); // 100
+DataHelper::get($data, 'products/desk/price', '/'); // 100
 
 // With default value
-DataHelper::get($data, 'products/desk/discount', 0, '/'); // 0
+DataHelper::get($data, 'products/desk/discount', '/', 0); // 0
 
 // Using wildcards to get multiple values
 $data = [
@@ -121,7 +84,7 @@ $data = [
         ['name' => 'Chair', 'price' => 50]
     ]
 ];
-DataHelper::get($data, 'products/*/price', null, '/'); // [100, 50]
+DataHelper::get($data, 'products/*/price', '/'); // [100, 50]
 
 // Using placeholders
 $flight = [
@@ -130,14 +93,14 @@ $flight = [
         ['from' => 'IST', 'to' => 'PKX'],
     ]
 ];
-DataHelper::get($flight, 'segments->{first}->from', null, '->'); // 'LHR'
-DataHelper::get($flight, 'segments->{last}->to', null, '->'); // 'PKX'
+DataHelper::get($flight, 'segments->{first}->from', '->'); // 'LHR'
+DataHelper::get($flight, 'segments->{last}->to', '->'); // 'PKX'
 
 // Using different separators for different data structures
 $config = ['app' => ['database' => ['host' => 'localhost']]];
-DataHelper::get($config, 'app|database|host', null, '|'); // 'localhost'
-DataHelper::get($config, 'app->database->host', null, '->'); // 'localhost'
-DataHelper::get($config, 'app/database/host', null, '/'); // 'localhost'
+DataHelper::get($config, 'app|database|host', '|'); // 'localhost'
+DataHelper::get($config, 'app->database->host', '->'); // 'localhost'
+DataHelper::get($config, 'app/database/host', '/'); // 'localhost'
 ```
 
 ### `DataHelper::set()` - Set Values
@@ -271,7 +234,7 @@ $config = [
 ];
 
 // Access them safely using a different separator
-$appName = data_get($config, 'app.name', separator: '|'); // 'My Application'
+$appName = _data_get($config, 'app.name', '|'); // 'My Application'
 ```
 
 ### 2. URL-Style Paths
@@ -285,7 +248,7 @@ $routes = [
     ]
 ];
 
-$controller = data_get($routes, 'api/v1/users', separator: '/');
+$controller = _data_get($routes, 'api/v1/users', '/');
 // 'UsersController@index'
 ```
 
@@ -302,20 +265,26 @@ $data = [
     ]
 ];
 
-$theme = data_get($data, 'user->profile->settings->theme', separator: '->');
+$theme = _data_get($data, 'user->profile->settings->theme', '->');
 // 'dark'
 ```
 
 ## Backward Compatibility
 
-All functions maintain 100% backward compatibility with Laravel's default helpers. If you don't specify a separator, they work exactly like Laravel's built-in helpers with dot notation.
+The DataHelper class and helper functions use dot notation by default, making them compatible with Laravel's conventions. The package uses underscore-prefixed global functions (`_data_*`) to avoid conflicts with Laravel's built-in helpers.
 
 ```php
-// These work identically to Laravel's default helpers
-data_get($array, 'user.name');
-data_set($array, 'user.email', 'john@example.com');
-data_has($array, 'user.profile');
-data_forget($array, 'user.settings');
+// Using default dot separator (no conflicts with Laravel)
+DataHelper::get($array, 'user.name');
+DataHelper::set($array, 'user.email', 'john@example.com');
+DataHelper::has($array, 'user.profile');
+DataHelper::forget($array, 'user.settings');
+
+// Or using global helpers
+_data_get($array, 'user.name');
+_data_set($array, 'user.email', 'john@example.com');
+_data_has($array, 'user.profile');
+_data_forget($array, 'user.settings');
 ```
 
 ## Features
