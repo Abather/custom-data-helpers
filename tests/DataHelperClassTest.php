@@ -84,7 +84,7 @@ describe('DataHelper::get', function () {
             ],
         ];
 
-        expect(DataHelper::get($array, 'users/{first}/name', '/'))->toBe('Taylor');
+        expect(DataHelper::get($array, 'users->{first}->name', '->'))->toBe('Taylor');
         expect(DataHelper::get($array, 'users->{last}->name', '->'))->toBe('Dries');
     });
 
