@@ -1,7 +1,6 @@
 {
     "name": "abather/custom-data-helpers",
     "description": "extend data helpers to include custom seperators.",
-    "version": "1.0",
     "keywords": [
         "Abather",
         "laravel",
